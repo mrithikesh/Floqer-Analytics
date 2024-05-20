@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Titles</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Job Titles for Year <span id="yearSpan"></span></h1>
+    <table>
+        <thead>
+            <tr>
+                <th>JOB TITLE</th>
+                <th>NUMBER OF JOBS</th>
+            </tr>
+        </thead>
+        <tbody id="titleTable">
+        </tbody>
+    </table>
+
+    <script>
+        window.onload = () => {
+            const jobTitleData = JSON.parse(localStorage.getItem('jobTitleData'));
+            const selectedYear = localStorage.getItem('selectedYear');
+            document.getElementById('yearSpan').textContent = selectedYear;
+
+            const jobTitleTableBody = document.getElementById('titleTable');
+            jobTitleTableBody.innerHTML = '';
+            jobTitleData.forEach(row => {
+                let rowElement = document.createElement('tr');
+                rowElement.innerHTML = `<td>${row.job_title}</td><td>${row.number_of_jobs}</td>`;
+                jobTitleTableBody.appendChild(rowElement);
+            });
+        };
+    </script>
+</body>
+</html>

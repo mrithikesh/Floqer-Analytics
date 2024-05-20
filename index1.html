@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task_1</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+        th {
+            cursor: pointer;
+        }
+    </style>
+    <!-- Include PapaParse library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <!-- Include Chart.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>ML Engineer Salaries</h1>
+    <table id="mainTable">
+        <thead>
+            <tr>
+                <th onclick="sortTable(0)">YEAR</th>
+                <th onclick="sortTable(1)">TOTAL JOBS</th>
+                <th onclick="sortTable(2)">AVERAGE SALARY (USD)</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+        </tbody>
+    </table>
+
+    <canvas id="lineChart" width="400" height="200"></canvas>
+
+    <script>
+        let rawData = [];
+
+        fetch('./salaries.csv')
+            .then(response => response.text())
+            .then(csvText => {
+                rawData = Papa.parse(csvText, { header: true }).data;
+
+                const groupedByYear = rawData.reduce((acc, curr) => {
+                    if (!acc[curr.work_year]) {
+                        acc[curr.work_year] = [];
+                    }
+                    acc[curr.work_year].push(curr);
+                    return acc;
+                }, {});
+
+                const result = Object.keys(groupedByYear).map(work_year => {
+                    const yearData = groupedByYear[work_year];
+                    const totalJobs = yearData.length;
+                    const averageSalary = yearData.reduce((acc, curr) => {
+                        const salary = parseFloat(curr.salary_in_usd);
+                        return acc + salary;
+                    }, 0) / yearData.length;
+                    return { work_year: parseInt(work_year, 10), total_jobs: totalJobs, average_salary: averageSalary.toFixed(2) };
+                });
+
+                loadTableData(result);
+
+                loadChartData(result);
+            });
+
+        function loadTableData(data) {
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+            data.forEach(row => {
+                let rowElement = document.createElement('tr');
+                rowElement.innerHTML = `<td>${row.work_year}</td><td>${row.total_jobs}</td><td>${row.average_salary}</td>`;
+                rowElement.addEventListener('click', () => titleTable(row.work_year));
+                tableBody.appendChild(rowElement);
+            });
+        }
+
+        function loadChartData(data) {
+            const labels = data.map(row => row.work_year);
+            const totalJobs = data.map(row => row.total_jobs);
+            const averageSalary = data.map(row => row.average_salary);
+            const ctx = document.getElementById('lineChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Total Jobs',
+                            data: totalJobs,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            yAxisID: 'y',
+                        },
+                        {
+                            label: 'Average Salary (USD)',
+                            data: averageSalary,
+                            borderColor: 'rgba(153, 102, 255, 1)',
+                            backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                            yAxisID: 'y1',
+                        }
+                    ]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Total Jobs'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Average Salary (USD)'
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function sortTable(columnIndex) {
+            const table = document.getElementById('mainTable');
+            const rows = Array.from(table.rows).slice(1);
+            const sortedRows = rows.sort((a, b) => {
+                const cellA = a.cells[columnIndex].innerText;
+                const cellB = b.cells[columnIndex].innerText;
+                return isNaN(cellA) ? cellA.localeCompare(cellB) : Number(cellA) - Number(cellB);
+            });
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+            sortedRows.forEach(row => tableBody.appendChild(row));
+        }
+
+        function titleTable(year) {
+            const filteredData = rawData.filter(row => row.work_year == year);
+            const aggregatedData = filteredData.reduce((acc, curr) => {
+                if (!acc[curr.job_title]) {
+                    acc[curr.job_title] = 0;
+                }
+                acc[curr.job_title]+=1;
+                return acc;
+            }, {});
+            const jobTitleData = Object.keys(aggregatedData).map(job_title => ({
+                job_title: job_title,
+                number_of_jobs: aggregatedData[job_title]
+            }));
+
+            localStorage.setItem('jobTitleData', JSON.stringify(jobTitleData));
+            localStorage.setItem('selectedYear', year);
+
+            window.location.href = 'index2.html';
+        }
+
+        window.onload = () => {
+        };
+    </script>
+</body>
+</html>
